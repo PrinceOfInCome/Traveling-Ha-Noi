@@ -55,17 +55,17 @@ export default ({
 
 const styles = StyleSheet.create({
   viewTab: {
-    marginTop: Platform.OS == 'ios' ? 360 : 376,
     alignSelf: 'center',
     flexDirection: 'row',
   },
   scrollView: {
     width: 300,
     marginLeft: 55,
+    marginTop: -30,
   },
   btnFood: {
     width: 70,
-    height: 70,
+    height: 60,
     borderWidth: 1,
     borderRadius: 10,
     borderColor: '#707070',
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   btnIntroduce: {
     width: 70,
-    height: 70,
+    height: 60,
     borderWidth: 1,
     borderRadius: 10,
     justifyContent: 'center',
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   btnTraveler: {
     width: 100,
-    height: 70,
+    height: 60,
     borderWidth: 1,
     borderRadius: 10,
     justifyContent: 'center',

@@ -10,20 +10,33 @@ import {
   Image,
   Dimensions,
   Button,
+  FlatList,
+  TextInput,
+  Alert,
 } from 'react-native';
 import ButtonMaps from '../../component/button/buttonClick';
-import Geolocation from 'react-native-geolocation-service';
-
+import firebaseApp from '../../service/api/index';
+import ImagePicker from 'react-native-image-picker';
+import Toast from 'react-native-simple-toast';
+import Share from 'react-native-share';
+import {uuid} from '../../utility/constants';
+import CardComment from '../../component/card/cardComment';
 var {width, heigh} = Dimensions.get('window');
 const HEADER_MIN_HEIGHT = Platform.OS == 'ios' ? 90 : 65;
 const HEADER_MAX_HEIGHT = 400;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
-import getDirections from 'react-native-google-maps-directions';
 
-export default function Destination({navigation, route}) {
+export default function AboutDestination({navigation, route}) {
   const scrollYAnimatedValue = useRef(new Animated.Value(0)).current;
+  const [review, setReview] = useState({
+    review: '',
+  });
+
+  const [imgSource, setImgSource] = useState('');
+  const [comment, setComment] = useState([]);
+  const [user, setUser] = useState({userName: '', imageAvatar: '', uuid});
+
   const {params} = route;
-  const [currentLocation, setCurrentLocation] = useState('');
   const {
     latitudes,
     longitudes,
@@ -35,25 +48,50 @@ export default function Destination({navigation, route}) {
     price,
     timeOpen,
     description,
-    introduction,
+    uid,
   } = params;
   useEffect(() => {
-    Geolocation.getCurrentPosition(
-      ({coords}) => {
-        const {latitude, longitude} = coords;
-        setCurrentLocation({
-          ...currentLocation,
-          latitude,
-          longitude,
-        });
-      },
-      error => {
-        console.log(error.code, error.message);
-      },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
-    );
+    async function fetchUser() {
+      await firebaseApp
+        .database()
+        .ref('user')
+        .on('value', dataUser => {
+          let currentUser = {
+            uuid: '',
+            img: '',
+            name: '',
+          };
 
-    console.log('FUCK YOU' + JSON.stringify(currentLocation));
+          dataUser.forEach(child => {
+            if (uuid == child.val().uuid) {
+              (currentUser.uuid = child.val().uuid),
+                (currentUser.name = child.val().userName),
+                (currentUser.img = child.val().imgAvatar);
+            }
+          });
+          setUser(currentUser);
+        });
+    }
+    async function fetchComment() {
+      await firebaseApp
+        .database()
+        .ref(`Comment/Destination/${uid}`)
+        .on('value', dataSnapshot => {
+          const comment = [];
+          dataSnapshot.forEach(child => {
+            console.log(child);
+            comment.push({
+              imgAvatar: child.val().imageAvatar,
+              imgComment: child.val().imageComment,
+              txtComment: child.val().textComment,
+              uuid: child.val().uuid,
+            });
+          });
+          setComment(comment);
+        });
+    }
+    fetchComment();
+    fetchUser();
   }, []);
   const headerTranslate = scrollYAnimatedValue.interpolate({
     inputRange: [0, HEADER_SCROLL_DISTANCE],
@@ -81,52 +119,129 @@ export default function Destination({navigation, route}) {
     outputRange: ['#e91e63', '#FFF'],
     extrapolate: 'clamp',
   });
-  onNextMaps = () => {
-    console.log(
-      'data',
-      currentLocation.latitude,
-      currentLocation.longitude,
-      latitudes,
-      longitudes,
-    );
-    const data = {
-      source: {
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-      },
-      destination: {
-        latitude: 21.033571,
-        longitude: 105.846432,
-      },
-      params: [
-        {
-          key: 'travelmode',
-          value: 'driving', // may be "walking", "bicycling" or "transit" as well
-        },
-        {
-          key: 'dir_action',
-          value: 'navigate', // this instantly initializes navigation using the given travel mode
-        },
-      ],
-      waypoints: [
-        {
-          latitude: latitudes,
-          longitude: longitudes,
-        },
-        //  {
-        //    latitude: -33.8600026,
-        //    longitude: 18.697453
-        //  },
-        // 	{
-        //    latitude: -33.8600036,
-        //    longitude: 18.697493
-        //  }
-      ],
+  const handleOnChange = (name, value) => {
+    setReview({
+      ...review,
+      [name]: value,
+    });
+  };
+  const onFavorite = async () => {
+    if (!uuid) {
+      Alert.alert(
+        'Alert',
+        'Please login to your account ! \nClick ok to login your account',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Cancel Pressed'),
+            style: 'cancel',
+          },
+          {text: 'OK', onPress: () => navigation.navigate('LoginFb')},
+        ],
+        {cancelable: false},
+      );
+    } else {
+      Toast.show('Save to favorites list ', Toast.LONG);
+
+      firebaseApp
+        .database()
+        .ref(`user/${uuid}/favoriteDestination/${uid}`)
+        .set({
+          latitudes: latitudes,
+          longitudes: longitudes,
+          imageTitle: imageTitle,
+          image1: image1,
+          image2: image2,
+          name: name,
+          address: address,
+          price: price,
+          timeOpen: timeOpen,
+          description: description,
+          uid: uid,
+        });
+      Toast.show('Save to favorites list ', Toast.LONG);
+    }
+  };
+  const onShare = async () => {
+    const shareOptions = {
+      message: 'To Hanoi must try this dish',
+      title: name,
+      url: imageTitle,
     };
 
-    getDirections(data);
+    try {
+      const ShareResponse = await Share.open(shareOptions);
+    } catch (error) {
+      console.log(error);
+    }
   };
+  const onInsertImage = async () => {
+    if (!uuid) {
+      Alert.alert(
+        'Alert',
+        'Please login to your account ! \nClick ok to login your account',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Cancel Pressed'),
+            style: 'cancel',
+          },
+          {text: 'OK', onPress: () => navigation.navigate('LoginFb')},
+        ],
+        {cancelable: false},
+      );
+    } else {
+      const options = {
+        storageOptions: {
+          skipBackup: true,
+        },
+      };
+      ImagePicker.showImagePicker(options, response => {
+        console.log('Response = ', response);
 
+        if (response.didCancel) {
+          console.log('User cancelled photo picker');
+        } else if (response.error) {
+          console.log('ImagePicker Error: ', response.error);
+        } else if (response.customButton) {
+          console.log('User tapped custom button: ', response.customButton);
+        } else {
+          // Base 64 image:
+          let sources = 'data:image/jpeg;base64,' + response.data;
+          setImgSource(sources);
+        }
+      });
+    }
+  };
+  const onReview = async () => {
+    if (!uuid) {
+      Alert.alert(
+        'Alert',
+        'Please login to your account ! \nClick ok to login your account',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Cancel Pressed'),
+            style: 'cancel',
+          },
+          {text: 'OK', onPress: () => navigation.navigate('LoginFb')},
+        ],
+        {cancelable: false},
+      );
+    } else {
+      await firebaseApp
+        .database()
+        .ref(`Comment/Destination/${uid}`)
+        .push({
+          userNam: user.name,
+          imageAvatar: user.img,
+          uuid: user.uuid,
+          imageComment: imgSource,
+          textComment: review.review,
+        });
+      setReview('');
+    }
+  };
   return (
     <View style={styles.container}>
       <ScrollView
@@ -166,6 +281,56 @@ export default function Destination({navigation, route}) {
             Times open
           </Text>
           <Text style={{fontSize: 16, margin: 16}}>{timeOpen}</Text>
+
+          <View>
+            <Text style={{fontSize: 18, fontWeight: 'bold', margin: 16}}>
+              Comments and Reviews
+            </Text>
+
+            {comment != '' ? (
+              <FlatList
+                style={styles.fatList}
+                data={comment}
+                renderItem={({item}) => (
+                  <CardComment
+                    imgAvatar={item.imgAvatar}
+                    txtComment={item.txtComment}
+                    imgComment={item.imgComment}
+                  />
+                )}
+                keyExtractor={(_, index) => index.toString()}
+              />
+            ) : null}
+
+            <View style={styles.review}>
+              <TouchableOpacity
+                onPress={() => onInsertImage()}
+                style={{marginBottom: 25, marginLeft: 16, marginRight: 16}}>
+                <Image
+                  style={{width: 35, height: 35}}
+                  source={require('../../image/camera.png')}
+                />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.inputText}
+                placeholder="Please write your review here !"
+                placeholderTextColor="#999"
+                value={review}
+                keyboardType="default"
+                returnKeyType="done"
+                onChangeText={text => handleOnChange('review', text)}
+              />
+
+              <TouchableOpacity
+                style={styles.btnUser}
+                onPress={() => onReview()}>
+                <Image
+                  style={{width: 40, height: 40, borderRadius: 100}}
+                  source={require('../../image/sent.png')}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
           <Text style={{fontSize: 18, fontWeight: 'bold', marginLeft: 16}}>
             About Image
           </Text>
@@ -186,7 +351,15 @@ export default function Destination({navigation, route}) {
           <ButtonMaps
             colors="orange"
             title="View on Google Map"
-            onPress={() => onNextMaps()}
+            onPress={() =>
+              navigation.navigate('MapsDestination', {
+                latitudes: latitudes,
+                longitudes: longitudes,
+                imageTitle: imageTitle,
+                name: name,
+                address: address,
+              })
+            }
           />
         </View>
       </ScrollView>
@@ -218,15 +391,13 @@ export default function Destination({navigation, route}) {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.btnFavorite}
-          onPress={() => alert('Favorite')}>
+          onPress={() => onFavorite()}>
           <Image
             source={require('../../image/heart.png')}
             style={{width: 28, height: 28}}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btnShare}
-          onPress={() => alert('Share')}>
+        <TouchableOpacity style={styles.btnShare} onPress={() => onShare()}>
           <Image
             source={require('../../image/share.png')}
             style={{width: 28, height: 28}}
@@ -240,7 +411,7 @@ export default function Destination({navigation, route}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center',backgroundColor: 'white'
   },
   animatedHeaderContainer: {
     position: 'absolute',
@@ -334,5 +505,44 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     overflow: 'hidden',
     height: HEADER_MAX_HEIGHT,
+  },
+  inputText: {
+    width: 270,
+    height: 40,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#888',
+    paddingLeft: 16,
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  review: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  btnUser: {
+    width: 40,
+    height: 40,
+    borderRadius: 100,
+    marginBottom: 20,
+    marginRight: 16,
+    marginLeft: 16,
+  },
+  fatList: {
+    width: width - 32,
+    marginLeft: 16,
+    marginBottom: 20,
+    height: 200,
+    backgroundColor: 'white',
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.27,
+    shadowRadius: 4.65,
+
+    elevation: 6,
   },
 });

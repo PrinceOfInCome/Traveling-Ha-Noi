@@ -8,23 +8,24 @@ import {
   Button,
 } from 'react-native';
 import firebaseApp from '../../service/api/index';
+
 export default function Add() {
   const [informationNew, setInformationNew] = useState({
-    title: '',
-    img: '',
-    imgDes: '',
-    information1: '',
-    information2: '',
-    newsTitle: '',
+    text: '',
   });
-  const {
-    title,
-    img,
-    imgDes,
-    information1,
-    information2,
-    newsTitle,
-  } = informationNew;
+  const {text} = informationNew;
+  useEffect(() => {}, [
+    firebaseApp
+      .database()
+      .ref('data/Food')
+      .on('value', dataSnapshot => {
+        dataSnapshot.forEach(child => {
+          child.forEach(data => {
+            console.log(data.key);
+          });
+        });
+      }),
+  ]);
   handleOnChange = (name, value) => {
     setInformationNew({
       ...informationNew,
@@ -34,75 +35,26 @@ export default function Add() {
   onSubmit = () => {
     firebaseApp
       .database()
-      .ref('data/News')
+      .ref('data')
       .push({
-        title,
-        img,
-        imgDes,
-        information1,
-        information2,
-        newsTitle,
+        text: text,
+        uid: key,
       });
   };
   onClear = () => {
-    setInformationNew({
-      title: '',
-      img: '',
-      imgDes: '',
-      information1: '',
-      information2: "",
-	  newsTitle: '',
-    });
+    setInformationNew({text: uid});
+    console.log(informationNew);
+    console.log(uid);
   };
   return (
     <SafeAreaView style={styles.container}>
       <TextInput
         style={styles.inputText}
-        placeholder="Information 1"
-        value={information1}
+        placeholder="Fuck"
+        value={text}
         keyboardType="default"
         returnKeyType="next"
-        onChangeText={text => handleOnChange('information1', text)}
-      />
-      <TextInput
-        style={styles.inputText}
-        placeholder="Title"
-        value={title}
-        keyboardType="default"
-        returnKeyType="next"
-        onChangeText={text => handleOnChange('title', text)}
-      />
-      <TextInput
-        style={styles.inputText}
-        placeholder="Image"
-        value={img}
-        keyboardType="default"
-        returnKeyType="next"
-        onChangeText={text => handleOnChange('img', text)}
-      />
-      <TextInput
-        style={styles.inputText}
-        placeholder="Image Des"
-        value={imgDes}
-        keyboardType="default"
-        returnKeyType="next"
-        onChangeText={text => handleOnChange('imgDes', text)}
-      />
-      <TextInput
-        style={styles.inputText}
-        placeholder="NewTitle"
-        value={newsTitle}
-        keyboardType="default"
-        returnKeyType="next"
-        onChangeText={text => handleOnChange('newsTitle', text)}
-      />
-      <TextInput
-        style={styles.inputText}
-        placeholder="InFormation 2"
-        value={information2}
-        keyboardType="default"
-        returnKeyType="next"
-        onChangeText={text => handleOnChange('information2', text)}
+        onChangeText={text => handleOnChange('text', text)}
       />
 
       <Button

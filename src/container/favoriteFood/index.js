@@ -12,30 +12,21 @@ import {
   Button,
   SafeAreaView,
   Alert,
-  TextInput,
-  FlatList,
-  Linking,
 } from 'react-native';
 import ButtonMaps from '../../component/button/buttonClick';
+import Geolocation from 'react-native-geolocation-service';
+import getDirections from 'react-native-google-maps-directions';
 import Share from 'react-native-share';
 import firebaseApp from '../../service/api/index';
 import Toast from 'react-native-simple-toast';
 import {uuid} from '../../utility/constants';
-import ImagePicker from 'react-native-image-picker';
-import CardComment from '../../component/card/cardComment';
 var {width, heigh} = Dimensions.get('window');
 const HEADER_MIN_HEIGHT = Platform.OS == 'ios' ? 90 : 65;
 const HEADER_MAX_HEIGHT = 400;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
-export default function AboutFood({navigation, route}) {
+export default function FavoriteFood({navigation, route}) {
   const scrollYAnimatedValue = useRef(new Animated.Value(0)).current;
-  const [review, setReview] = useState({
-    review: '',
-  });
-  const [imgSource, setImgSource] = useState('');
-  const [comment, setComment] = useState([]);
-  const [user, setUser] = useState({userName: '', imageAvatar: '', uuid});
   const {params} = route;
   const {
     latitudes,
@@ -50,52 +41,11 @@ export default function AboutFood({navigation, route}) {
     description,
     introduction,
     uid,
-    contact,
   } = params;
+  const [idFood, setIdFood] = useState('');
   useEffect(() => {
-    async function fetchUser() {
-      await firebaseApp
-        .database()
-        .ref('user')
-        .on('value', dataUser => {
-          let currentUser = {
-            uuid: '',
-            img: '',
-            name: '',
-          };
-
-          dataUser.forEach(child => {
-            if (uuid == child.val().uuid) {
-              (currentUser.uuid = child.val().uuid),
-                (currentUser.name = child.val().userName),
-                (currentUser.img = child.val().imgAvatar);
-            }
-          });
-          setUser(currentUser);
-        });
-    }
-    async function fetchComment() {
-      await firebaseApp
-        .database()
-        .ref(`Comment/Food/${uid}`)
-        .on('value', dataSnapshot => {
-          const comment = [];
-          dataSnapshot.forEach(child => {
-            console.log(child);
-            comment.push({
-              imgAvatar: child.val().imageAvatar,
-              imgComment: child.val().imageComment,
-              txtComment: child.val().textComment,
-              uuid: child.val().uuid,
-            });
-          });
-          setComment(comment);
-        });
-    }
-    fetchComment();
-    fetchUser();
+    
   }, []);
-
   const headerTranslate = scrollYAnimatedValue.interpolate({
     inputRange: [0, HEADER_SCROLL_DISTANCE],
     outputRange: [0, -HEADER_SCROLL_DISTANCE],
@@ -152,121 +102,11 @@ export default function AboutFood({navigation, route}) {
         {cancelable: false},
       );
     } else {
-      Toast.show('Save to favorites list ', Toast.LONG);
-
       firebaseApp
         .database()
         .ref(`user/${uuid}/favoriteFood/${uid}`)
-        .set({
-          latitudes: latitudes,
-          longitudes: longitudes,
-          imageTitle: imageTitle,
-          image1: image1,
-          image2: image2,
-          name: name,
-          address: address,
-          price: price,
-          timeOpen: timeOpen,
-          description: description,
-          introduction: introduction,
-          uid: uid,
-        });
-      Toast.show('Save to favorites list ', Toast.LONG);
-    }
-  };
-  const handleOnChange = (name, value) => {
-    setReview({
-      ...review,
-      [name]: value,
-    });
-  };
-  const onReview = async () => {
-    if (!uuid) {
-      Alert.alert(
-        'Alert',
-        'Please login to your account ! \nClick ok to login your account',
-        [
-          {
-            text: 'Cancel',
-            onPress: () => console.log('Cancel Pressed'),
-            style: 'cancel',
-          },
-          {text: 'OK', onPress: () => navigation.navigate('LoginFb')},
-        ],
-        {cancelable: false},
-      );
-    } else {
-      await firebaseApp
-        .database()
-        .ref(`Comment/Food/${uid}`)
-        .push({
-          userNam: user.name,
-          imageAvatar: user.img,
-          uuid: user.uuid,
-          imageComment: imgSource,
-          textComment: review.review,
-        });
-      setReview('');
-    }
-  };
-  const onInsertImage = async () => {
-    if (!uuid) {
-      Alert.alert(
-        'Alert',
-        'Please login to your account ! \nClick ok to login your account',
-        [
-          {
-            text: 'Cancel',
-            onPress: () => console.log('Cancel Pressed'),
-            style: 'cancel',
-          },
-          {text: 'OK', onPress: () => navigation.navigate('LoginFb')},
-        ],
-        {cancelable: false},
-      );
-    } else {
-      const options = {
-        storageOptions: {
-          skipBackup: true,
-        },
-      };
-      ImagePicker.showImagePicker(options, response => {
-        console.log('Response = ', response);
-
-        if (response.didCancel) {
-          console.log('User cancelled photo picker');
-        } else if (response.error) {
-          console.log('ImagePicker Error: ', response.error);
-        } else if (response.customButton) {
-          console.log('User tapped custom button: ', response.customButton);
-        } else {
-          // Base 64 image:
-          let sources = 'data:image/jpeg;base64,' + response.data;
-          setImgSource(sources);
-        }
-      });
-    }
-  };
-  const onCallPhone = async () => {
-    Alert.alert(
-      'Alert',
-      'You definitely want to call this phone number ?',
-      [
-        {
-          text: 'Cancel',
-          onPress: () => console.log('Cancel Pressed'),
-          style: 'cancel',
-        },
-        {text: 'OK', onPress: () => onCall()},
-      ],
-      {cancelable: false},
-    );
-  };
-  const onCall = () => {
-    if (Platform.OS === 'android') {
-      Linking.openURL(`tel:${contact}`);
-    } else {
-      Linking.openURL(`telprompt:${contact}`);
+        .remove();
+      Toast.show('Removed from your favorites list !', Toast.LONG);
     }
   };
   return (
@@ -283,7 +123,7 @@ export default function AboutFood({navigation, route}) {
               fontSize: 18,
               fontWeight: 'bold',
               marginLeft: 16,
-              marginTop: 16,
+              marginTop: -20,
             }}>
             Introduction
           </Text>
@@ -309,69 +149,7 @@ export default function AboutFood({navigation, route}) {
             Times open
           </Text>
           <Text style={{fontSize: 16, margin: 16}}>{timeOpen}</Text>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Text style={{fontSize: 18, fontWeight: 'bold', marginLeft: 16}}>
-              Contact
-            </Text>
-            <TouchableOpacity onPress={() => onCallPhone()}>
-              <Image
-                style={{width: 28, height: 28, marginLeft: 16}}
-                source={require('../../image/phone.png')}
-              />
-            </TouchableOpacity>
-          </View>
-          <Text style={{fontSize: 16, margin: 16}}>{contact}</Text>
-          
-          <View>
-            <Text style={{fontSize: 18, fontWeight: 'bold', marginLeft: 16, marginBottom: 16}}>
-              Comments and Reviews
-            </Text>
-
-            {comment != '' ? (
-              <FlatList
-                style={styles.fatList}
-                data={comment}
-                renderItem={({item}) => (
-                  <CardComment
-                    imgAvatar={item.imgAvatar}
-                    txtComment={item.txtComment}
-                    imgComment={item.imgComment}
-                  />
-                )}
-                keyExtractor={(_, index) => index.toString()}
-              />
-            ) : null}
-
-            <View style={styles.review}>
-              <TouchableOpacity
-                onPress={() => onInsertImage()}
-                style={{marginBottom: 25, marginLeft: 16, marginRight: 16}}>
-                <Image
-                  style={{width: 35, height: 35}}
-                  source={require('../../image/camera.png')}
-                />
-              </TouchableOpacity>
-              <TextInput
-                style={styles.inputText}
-                placeholder="Please write your review here !"
-                placeholderTextColor="#999"
-                value={review}
-                keyboardType="default"
-                returnKeyType="done"
-                onChangeText={text => handleOnChange('review', text)}
-              />
-
-              <TouchableOpacity
-                style={styles.btnUser}
-                onPress={() => onReview()}>
-                <Image
-                  style={{width: 40, height: 40, borderRadius: 100}}
-                  source={require('../../image/sent.png')}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-		  <Text style={{fontSize: 18, fontWeight: 'bold', marginLeft: 16}}>
+          <Text style={{fontSize: 18, fontWeight: 'bold', marginLeft: 16}}>
             About Image
           </Text>
           <View style={{flexDirection: 'row'}}>
@@ -451,8 +229,7 @@ export default function AboutFood({navigation, route}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-	justifyContent: 'center',
-	backgroundColor: 'white'
+    justifyContent: 'center',backgroundColor: 'white'
   },
   animatedHeaderContainer: {
     position: 'absolute',
@@ -546,44 +323,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     overflow: 'hidden',
     height: HEADER_MAX_HEIGHT,
-  },
-  inputText: {
-    width: 270,
-    height: 40,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: '#888',
-    paddingLeft: 16,
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  review: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  btnUser: {
-    width: 40,
-    height: 40,
-    borderRadius: 100,
-    marginBottom: 20,
-    marginRight: 16,
-    marginLeft: 16,
-  },
-  fatList: {
-    width: width - 32,
-    marginLeft: 16,
-    marginBottom: 20,
-    height: 200,
-    backgroundColor: 'white',
-    borderRadius: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.27,
-    shadowRadius: 4.65,
-
-    elevation: 6,
   },
 });

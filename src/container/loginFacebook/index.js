@@ -11,46 +11,45 @@ import {TouchableOpacity} from 'react-native-gesture-handler';
 import {LoginButton, AccessToken, LoginManager} from 'react-native-fbsdk';
 import firebaseApp from '../../service/api/index';
 import * as firebase from 'firebase';
-
+import {setUniqueValue} from '../../utility/constants/index';
 import {setAsyncStorage, keys} from '../../asyncStorage';
-import {
-  setUniqueValue,
-  keyboardVerticalOffset,
-} from '../../utility/constants/index';
+
 export default function LoginFacebook({navigation}) {
   const onLoginFacebook = async () => {
     try {
       const result = await LoginManager.logInWithPermissions([
         'public_profile',
         'email',
-        'user_photos',
       ]);
       const tokenData = await AccessToken.getCurrentAccessToken();
       const token = await tokenData.accessToken.toString();
       const credential = await firebase.auth.FacebookAuthProvider.credential(
         token,
       );
-      const user = await firebaseApp.auth().signInWithCredential(credential);
-      console.log('FACEBOOK: ' + JSON.stringify(user));
 
-      if (user != null) {
-        setAsyncStorage(keys.uuid, user.user.uid);
-        setUniqueValue(user.user.uid);
-        firebaseApp
-          .database()
-          .ref('user/' + user.user.uid)
-          .set({
-            uid: user.user.uid,
-            userName: user.user.displayName,
-            imgAvatar: user.user.photoURL,
-            phone: user.user.phoneNumber,
-            email: user.user.email,
-          });
-        navigation.navigate('BottomNavigator');
-      }
+      const user = await firebaseApp.auth().signInWithCredential(credential);
+      const data = user.user.providerData;
+      data.forEach(dataFb => {
+        if (user != null) {
+          setAsyncStorage(keys.uuid, user.user.uid);
+          setUniqueValue(user.user.uid);
+          firebaseApp
+            .database()
+            .ref('user/' + user.user.uid)
+            .set({
+              uid: dataFb.uid,
+              userName: dataFb.displayName,
+              imgAvatar: dataFb.photoURL,
+              phone: dataFb.phoneNumber,
+              email: dataFb.email,
+              uuid: user.user.uid,
+            });
+          navigation.navigate('BottomNavigator');
+        }
+      });
     } catch (error) {
       console.log(error);
-      alert(error.message);
+      //alert(error.message);
     }
   };
   return (

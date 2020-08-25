@@ -15,14 +15,17 @@ import BottomNavigator from '../BottomNavigator';
 import HandBook from '../../container/handBook';
 import News from '../../container/news';
 import Add from '../../container/add';
-import GoogleMaps from '../../container/googleMaps';
+import MapsFood from '../../container/MapsFood';
+import MapsDestination from '../../container/MapsDestination';
+import FavoriteDestination from '../../container/favoriteDestination';
+import FavoriteFood from '../../container/favoriteFood';
 
 const Stack = createStackNavigator();
 
 function AppStack() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
+      <Stack.Navigator initialRouteName="Splash">
         <Stack.Screen
           name="BottomNavigator"
           component={BottomNavigator}
@@ -89,8 +92,23 @@ function AppStack() {
           options={{headerShown: false}}
         />
         <Stack.Screen
-          name="GoogleMaps"
-          component={GoogleMaps}
+          name="MapsFood"
+          component={MapsFood}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="MapsDestination"
+          component={MapsDestination}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="FavoriteDestination"
+          component={FavoriteDestination}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="FavoriteFood"
+          component={FavoriteFood}
           options={{headerShown: false}}
         />
         <Stack.Screen name="ShowImg" component={ShowImg} />

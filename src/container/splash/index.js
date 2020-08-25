@@ -18,7 +18,6 @@ export default function Splash({navigation}) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    console.log('Key Id: ' + keys.uuid);
     const redirect = setTimeout(() => {
       getAsyncStorage(keys.uuid)
         .then(uuid => {

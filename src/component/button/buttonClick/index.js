@@ -17,8 +17,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 100,
     alignSelf: 'center',
-    marginTop: 30,
-    marginBottom: 50,
+    marginTop: 20,
+    marginBottom: 30,
   },
   buttonText: {
     fontSize: 16,

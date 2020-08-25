@@ -34,6 +34,7 @@ export default function Destination({navigation}) {
                 timeOpen: child.val().timeOpen,
                 description: child.val().description,
                 imageTitle: child.val().imageTitle,
+                uid: child.key,
               });
             });
             setAllDestination(destination);
@@ -74,6 +75,7 @@ export default function Destination({navigation}) {
                 timeOpen: item.timeOpen,
                 description: item.description,
                 imageTitle: item.imageTitle,
+                uid: item.uid,
               });
             }}
           />
@@ -102,6 +104,7 @@ export default function Destination({navigation}) {
                 timeOpen: item.timeOpen,
                 description: item.description,
                 imageTitle: item.imageTitle,
+                uid: item.uid,
               });
             }}
           />

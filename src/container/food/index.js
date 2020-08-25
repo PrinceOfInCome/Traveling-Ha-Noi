@@ -33,10 +33,11 @@ export default function Food({navigation}) {
                 timeOpen: child.val().timeOpen,
                 description: child.val().description,
                 introduction: child.val().introduction,
+                uid: child.key,
+                contact: child.val().Contact,
               });
             });
             setAllFood(food);
-            console.log('Fuck: ', allFood);
           });
       } catch (error) {
         console.log(error.message);
@@ -81,6 +82,8 @@ export default function Food({navigation}) {
                 timeOpen: item.timeOpen,
                 description: item.description,
                 introduction: item.introduction,
+                uid: item.uid,
+                contact: item.contact,
               });
             }}
           />

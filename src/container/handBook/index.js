@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import Header from '../../component/header';
 var {width, height} = Dimensions.get('window');
-import {INTRODUCE} from '../../utility/string';
 import HtmlContent from '../../service/html/index';
 import HTML from 'react-native-render-html';
 

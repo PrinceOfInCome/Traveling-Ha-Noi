@@ -1,39 +1,101 @@
-import React from 'react';
-import {StyleSheet, Text, View, SafeAreaView, Image, Alert} from 'react-native';
-import firebase from '../../service/api/index';
+import React, {useEffect, useState} from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  SafeAreaView,
+  Image,
+  Alert,
+  TouchableOpacity,
+  BackHandler,
+} from 'react-native';
+import firebaseApp from '../../service/api/index';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonApp from '../../component/button/buttonClick';
 import {LoginManager} from 'react-native-fbsdk';
 import {uuid} from '../../utility/constants';
-import {TouchableOpacity} from 'react-native-gesture-handler';
 import {clearAsyncStorage, keys} from '../../asyncStorage';
+import AsyncStorage from '@react-native-community/async-storage';
 
 export default function Profile({navigation}) {
+  const [user, setUser] = useState({
+    uid: '',
+    email: '',
+    imgAvatar: '',
+    userName: '',
+    phone: '',
+  });
+  useEffect(() => {
+    function getApiUser() {
+      firebaseApp
+        .database()
+        .ref('user')
+        .on('value', dataUser => {
+          let currentUser = {
+            uid: '',
+            email: '',
+            imgAvatar: '',
+            userName: '',
+            phone: '',
+          };
+
+          dataUser.forEach(child => {
+            if (uuid == child.val().uuid) {
+              (currentUser.uid = uuid),
+                (currentUser.userName = child.val().userName),
+                (currentUser.phone = child.val().phone),
+                (currentUser.email = child.val().email),
+                (currentUser.imgAvatar = child.val().imgAvatar);
+            }
+          });
+          setUser(currentUser);
+        });
+    }
+    getApiUser();
+  }, []);
   handleOnSignOut = () => {
-    Alert.alert(
-      'Alert',
-      'You definitely want to log out ?',
-      [
-        {
-          text: 'Cancel',
-          onPress: () => console.log('Cancel Pressed'),
-          style: 'cancel',
-        },
-        {text: 'OK', onPress: () => onSignOut()},
-      ],
-      {cancelable: false},
-    );
+    console.log(user, 'user');
+    if (user.userName == '') {
+      Alert.alert(
+        'Alert',
+        'Please login to your account ! \nClick ok to login your account',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Cancel Pressed'),
+            style: 'cancel',
+          },
+          {text: 'OK', onPress: () => navigation.navigate('LoginFb')},
+        ],
+        {cancelable: false},
+      );
+    } else {
+      Alert.alert(
+        'Warning',
+        'All your information has been deleted !\nYou definitely want to log out ?',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Cancel Pressed'),
+            style: 'cancel',
+          },
+          {text: 'OK', onPress: () => onSignOut()},
+        ],
+        {cancelable: false},
+      );
+    }
   };
+
   onSignOut = async () => {
-    console.log('uids', keys.uuid, uuid);
-    LoginManager.logOut();
-    await firebase
+    await clearAsyncStorage();
+    await firebaseApp
       .database()
-      .ref('user/' + uuid)
+      .ref(`user/${uuid}`)
       .remove();
+
+    LoginManager.logOut();
     navigation.navigate('LoginFb');
   };
-  clearAsyncStorage();
   onExit = () => {
     Alert.alert(
       'Alert',
@@ -44,7 +106,7 @@ export default function Profile({navigation}) {
           onPress: () => console.log('Cancel Pressed'),
           style: 'cancel',
         },
-        {text: 'OK'},
+        {text: 'OK', onPress: () => BackHandler.exitApp()},
       ],
       {cancelable: false},
     );
@@ -63,28 +125,33 @@ export default function Profile({navigation}) {
         </TouchableOpacity>
       </View>
       <View style={styles.user}>
-        <Image
-          style={{width: 120, height: 120, borderRadius: 100}}
-          source={require('../../image/cauLongBien.jpg')}
-        />
-        <Text style={{fontSize: 24, marginTop: 30}}>Robert Anitei</Text>
+        {user.imgAvatar ? (
+          <Image
+            style={{width: 120, height: 120, borderRadius: 100}}
+            source={{uri: user.imgAvatar}}
+          />
+        ) : (
+          <Image
+            style={{width: 120, height: 120, borderRadius: 100}}
+            source={require('../../image/cauLongBien.jpg')}
+          />
+        )}
+
+        <Text style={{fontSize: 24, marginTop: 30}}>{user.userName}</Text>
       </View>
       <View style={styles.information}>
         <View style={styles.viewIpm}>
-          <Image
-            source={require('../../image/location.png')}
-            style={{width: 30, height: 30, marginLeft: 16, marginRight: 16}}
-          />
-          <Text style={{fontSize: 18, color: '#707070'}}>Brasov, Romania</Text>
-        </View>
-        <View style={styles.viewIpm}>
-          <Image
-            source={require('../../image/mail.png')}
-            style={{width: 30, height: 30, marginLeft: 16, marginRight: 16}}
-          />
-          <Text style={{fontSize: 18, color: '#707070'}}>
-            contact@robertanitei.com
-          </Text>
+          {user.email ? (
+            <>
+              <Image
+                source={require('../../image/mail.png')}
+                style={{width: 30, height: 30, marginLeft: 16, marginRight: 16}}
+              />
+              <Text style={{fontSize: 18, color: '#707070'}}>{user.email}</Text>
+            </>
+          ) : (
+            <Text style={{fontSize: 18, color: '#707070'}}>Please login !</Text>
+          )}
         </View>
       </View>
 

@@ -5,7 +5,7 @@ import {
 } from '@react-navigation/bottom-tabs';
 import Home from '../../container/home';
 import Profile from '../../container/profile';
-import Favorite from '../../container/favoriteDestination';
+import Favorite from '../../container/favorite';
 import Icon from 'react-native-vector-icons/Ionicons';
 const Tab = createBottomTabNavigator();
 function BottomNavigator() {

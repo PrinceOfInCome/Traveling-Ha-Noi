@@ -40,6 +40,7 @@ export default function Introduce({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
   },
   txtAbout: {
     margin: 16,

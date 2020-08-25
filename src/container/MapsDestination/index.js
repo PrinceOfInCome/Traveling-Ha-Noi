@@ -17,36 +17,23 @@ import Geolocation from 'react-native-geolocation-service';
 var {width, height} = Dimensions.get('window');
 import MapView, {PROVIDER_GOOGLE, Marker, Callout} from 'react-native-maps';
 import getDirections from 'react-native-google-maps-directions';
-import mapsDarkStyle from '../../utility/maps/mapDarkStyle';
 import firebaseApp from '../../service/api/index';
 import ModelMaps from '../../component/model/mapModel';
 
-export default function GoogleMaps({route, navigation}) {
-  const [dataAllFood, setDataAllFood] = useState([]);
+export default function MapsDestination({route, navigation}) {
+  const [dataAllDes, setDataAllDes] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentLocation, setCurrentLocation] = useState('');
   const [visible, setVisible] = useState(false);
   const {params} = route;
-  const [currentFood, setCurrentFood] = useState({
+  const [currentDestination, setCurrentDestination] = useState({
     name: '',
     imageTitle: '',
     latitude: '',
     longitude: '',
     address: '',
   });
-  const {
-    latitudes,
-    longitudes,
-    imageTitle,
-    image1,
-    image2,
-    name,
-    address,
-    price,
-    timeOpen,
-    description,
-    introduction,
-  } = params;
+  const {latitudes, longitudes, imageTitle, name, address} = params;
   useEffect(() => {
     function getLocation() {
       Geolocation.getCurrentPosition(
@@ -65,7 +52,7 @@ export default function GoogleMaps({route, navigation}) {
       );
     }
     function fetchAPI() {
-      const getDataFB = firebaseApp.database().ref('data/Food');
+      const getDataFB = firebaseApp.database().ref('data/Destination');
       try {
         getDataFB.on('value', dataSnapshot => {
           let food = [];
@@ -74,17 +61,11 @@ export default function GoogleMaps({route, navigation}) {
               latitude: child.val().latitude,
               longitude: child.val().longitude,
               imageTitle: child.val().imageTitle,
-              image1: child.val().image1,
-              image2: child.val().image2,
               name: child.val().name,
               address: child.val().address,
-              price: child.val().price,
-              timeOpen: child.val().timeOpen,
-              description: child.val().description,
-              introduction: child.val().introduction,
             });
           });
-          setDataAllFood(food);
+          setDataAllDes(food);
         });
       } catch (error) {
         console.log(error.message);
@@ -97,14 +78,14 @@ export default function GoogleMaps({route, navigation}) {
   }, []);
   onShowDes = marker => {
     setVisible(true);
-    setCurrentFood({
+    setCurrentDestination({
       name: marker.name,
       imageTitle: marker.imageTitle,
       latitude: marker.latitude,
       longitude: marker.longitude,
       address: marker.address,
     });
-    console.log('object' + currentFood);
+    console.log('object' + currentDestination);
   };
   onDirections = () => {
     const data = {
@@ -166,8 +147,8 @@ export default function GoogleMaps({route, navigation}) {
       ],
       waypoints: [
         {
-          latitude: currentFood.latitude,
-          longitude: currentFood.longitude,
+          latitude: currentDestination.latitude,
+          longitude: currentDestination.longitude,
         },
         //  {
         //    latitude: -33.8600026,
@@ -209,7 +190,7 @@ export default function GoogleMaps({route, navigation}) {
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}>
-        {dataAllFood.map((marker, index) => (
+        {dataAllDes.map((marker, index) => (
           <Marker
             style={{width: 10, height: 100}}
             coordinate={{
@@ -217,7 +198,6 @@ export default function GoogleMaps({route, navigation}) {
               longitude: Number(marker.longitude),
             }}
             title={marker.name}
-            image={require('../../image/map_marker.png')}
             onPress={() => onShowDes(marker)}
           />
         ))}
@@ -232,9 +212,9 @@ export default function GoogleMaps({route, navigation}) {
       />
       <ModelMaps
         modalVisible={visible}
-        image={currentFood.imageTitle}
-        name={currentFood.name}
-        address={currentFood.address}
+        image={currentDestination.imageTitle}
+        name={currentDestination.name}
+        address={currentDestination.address}
         onDirections={() => onDirectionsFood()}
         onClose={() => setVisible(false)}
       />
